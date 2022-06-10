@@ -121,6 +121,7 @@ class VarList(object):
 class Session(object):
     def __init__(self, **args):
         self.sess_ptr = None
+        self.UseModule = 0
         self.UseLongNames = 0
         self.UseNumeric = 0
         self.UseSprintValue = 0

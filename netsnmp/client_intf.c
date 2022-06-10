@@ -87,6 +87,7 @@ static struct tree * __tag2oid (char *, char *, oid  *, int  *, int *, int);
 static int __concat_oid_str (oid *, int *, char *);
 static int __add_var_val_str (netsnmp_pdu *, oid *, int, char *,
                                  int, int);
+#define USE_MODULE 0x10
 #define USE_NUMERIC_OIDS 0x08
 #define NON_LEAF_NAME 0x04
 #define USE_LONG_NAMES 0x02
@@ -1511,10 +1512,15 @@ netsnmp_get(PyObject *self, PyObject *args)
       goto done;
     }
 
+    if (py_netsnmp_attr_long(session, "UseModule"))
+      getlabel_flag |= USE_MODULE;
     if (py_netsnmp_attr_long(session, "UseLongNames"))
       getlabel_flag |= USE_LONG_NAMES;
     if (py_netsnmp_attr_long(session, "UseNumeric"))
+    {
       getlabel_flag |= USE_NUMERIC_OIDS;
+      getlabel_flag |= USE_LONG_NAMES;
+    }
     if (py_netsnmp_attr_long(session, "UseEnums"))
       sprintval_flag = USE_ENUMS;
     if (py_netsnmp_attr_long(session, "UseSprintValue"))
@@ -1575,9 +1581,7 @@ netsnmp_get(PyObject *self, PyObject *args)
     old_format = netsnmp_ds_get_int(NETSNMP_DS_LIBRARY_ID,
         NETSNMP_DS_LIB_OID_OUTPUT_FORMAT);
 
-    if (py_netsnmp_attr_long(session, "UseLongNames")) {
-      getlabel_flag |= USE_LONG_NAMES;
-
+    if (getlabel_flag & USE_LONG_NAMES) {
       netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
           NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
           NETSNMP_OID_OUTPUT_FULL);
@@ -1585,13 +1589,15 @@ netsnmp_get(PyObject *self, PyObject *args)
     /* Setting UseNumeric forces UseLongNames on so check for UseNumeric
        after UseLongNames (above) to make sure the final outcome of 
        NETSNMP_DS_LIB_OID_OUTPUT_FORMAT is NETSNMP_OID_OUTPUT_NUMERIC */
-    if (py_netsnmp_attr_long(session, "UseNumeric")) {
-      getlabel_flag |= USE_LONG_NAMES;
-      getlabel_flag |= USE_NUMERIC_OIDS;
-
+    if (getlabel_flag & USE_NUMERIC_OIDS) {
       netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
           NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
           NETSNMP_OID_OUTPUT_NUMERIC);
+    }
+    if (getlabel_flag & USE_MODULE) {
+      netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
+          NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
+          NETSNMP_OID_OUTPUT_MODULE);
     }
 
     val_tuple = PyTuple_New(varlist_len);
@@ -1729,10 +1735,15 @@ netsnmp_getnext(PyObject *self, PyObject *args)
     err_num = py_netsnmp_attr_long(session, "ErrorNum");
     err_ind = py_netsnmp_attr_long(session, "ErrorInd");
 
+    if (py_netsnmp_attr_long(session, "UseModule"))
+      getlabel_flag |= USE_MODULE;
     if (py_netsnmp_attr_long(session, "UseLongNames"))
       getlabel_flag |= USE_LONG_NAMES;
     if (py_netsnmp_attr_long(session, "UseNumeric"))
+    {
       getlabel_flag |= USE_NUMERIC_OIDS;
+      getlabel_flag |= USE_LONG_NAMES;
+    }
     if (py_netsnmp_attr_long(session, "UseEnums"))
       sprintval_flag = USE_ENUMS;
     if (py_netsnmp_attr_long(session, "UseSprintValue"))
@@ -1797,9 +1808,7 @@ netsnmp_getnext(PyObject *self, PyObject *args)
     old_format = netsnmp_ds_get_int(NETSNMP_DS_LIBRARY_ID,
         NETSNMP_DS_LIB_OID_OUTPUT_FORMAT);
 
-    if (py_netsnmp_attr_long(session, "UseLongNames")) {
-      getlabel_flag |= USE_LONG_NAMES;
-
+    if (getlabel_flag & USE_LONG_NAMES) {
       netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
           NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
           NETSNMP_OID_OUTPUT_FULL);
@@ -1807,18 +1816,19 @@ netsnmp_getnext(PyObject *self, PyObject *args)
     /* Setting UseNumeric forces UseLongNames on so check for UseNumeric
        after UseLongNames (above) to make sure the final outcome of 
        NETSNMP_DS_LIB_OID_OUTPUT_FORMAT is NETSNMP_OID_OUTPUT_NUMERIC */
-    if (py_netsnmp_attr_long(session, "UseNumeric")) {
-      getlabel_flag |= USE_LONG_NAMES;
-      getlabel_flag |= USE_NUMERIC_OIDS;
-
+    if (getlabel_flag & USE_NUMERIC_OIDS) {
       netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
           NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
           NETSNMP_OID_OUTPUT_NUMERIC);
     }
+    if (getlabel_flag & USE_MODULE) {
+      netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
+          NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
+          NETSNMP_OID_OUTPUT_MODULE);
+    }
 
     val_tuple = PyTuple_New(varlist_len);
     /* initialize return tuple */
-    val_tuple = PyTuple_New(varlist_len);
     for (varlist_ind = 0; varlist_ind < varlist_len; varlist_ind++) {
       PyTuple_SetItem(val_tuple, varlist_ind, Py_BuildValue(""));
     }
@@ -1962,10 +1972,15 @@ netsnmp_walk(PyObject *self, PyObject *args)
     err_num = py_netsnmp_attr_long(session, "ErrorNum");
     err_ind = py_netsnmp_attr_long(session, "ErrorInd");
 
+    if (py_netsnmp_attr_long(session, "UseModule"))
+      getlabel_flag |= USE_MODULE;
     if (py_netsnmp_attr_long(session, "UseLongNames"))
       getlabel_flag |= USE_LONG_NAMES;
     if (py_netsnmp_attr_long(session, "UseNumeric"))
+    {
       getlabel_flag |= USE_NUMERIC_OIDS;
+      getlabel_flag |= USE_LONG_NAMES;
+    }
     if (py_netsnmp_attr_long(session, "UseEnums"))
       sprintval_flag = USE_ENUMS;
     if (py_netsnmp_attr_long(session, "UseSprintValue"))
@@ -2063,24 +2078,23 @@ netsnmp_walk(PyObject *self, PyObject *args)
     old_format = netsnmp_ds_get_int(NETSNMP_DS_LIBRARY_ID,
         NETSNMP_DS_LIB_OID_OUTPUT_FORMAT);
 
-    if (py_netsnmp_attr_long(session, "UseLongNames")) {
-      getlabel_flag |= USE_LONG_NAMES;
-
+    if (getlabel_flag & USE_LONG_NAMES) {
       netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
           NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
           NETSNMP_OID_OUTPUT_FULL);
     }
-
     /* Setting UseNumeric forces UseLongNames on so check for UseNumeric
        after UseLongNames (above) to make sure the final outcome of 
        NETSNMP_DS_LIB_OID_OUTPUT_FORMAT is NETSNMP_OID_OUTPUT_NUMERIC */
-    if (py_netsnmp_attr_long(session, "UseNumeric")) {
-      getlabel_flag |= USE_LONG_NAMES;
-      getlabel_flag |= USE_NUMERIC_OIDS;
-
+    if (getlabel_flag & USE_NUMERIC_OIDS) {
       netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
           NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
           NETSNMP_OID_OUTPUT_NUMERIC);
+    }
+    if (getlabel_flag & USE_MODULE) {
+      netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
+          NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
+          NETSNMP_OID_OUTPUT_MODULE);
     }
 
     /* delete the existing varbinds that we'll replace */
@@ -2312,10 +2326,15 @@ netsnmp_getbulk(PyObject *self, PyObject *args)
       err_num = py_netsnmp_attr_long(session, "ErrorNum");
       err_ind = py_netsnmp_attr_long(session, "ErrorInd");
 
+      if (py_netsnmp_attr_long(session, "UseModule"))
+        getlabel_flag |= USE_MODULE;
       if (py_netsnmp_attr_long(session, "UseLongNames"))
         getlabel_flag |= USE_LONG_NAMES;
       if (py_netsnmp_attr_long(session, "UseNumeric"))
+      {
         getlabel_flag |= USE_NUMERIC_OIDS;
+        getlabel_flag |= USE_LONG_NAMES;
+      }
       if (py_netsnmp_attr_long(session, "UseEnums"))
         sprintval_flag = USE_ENUMS;
       if (py_netsnmp_attr_long(session, "UseSprintValue"))
@@ -2376,9 +2395,7 @@ netsnmp_getbulk(PyObject *self, PyObject *args)
       old_format = netsnmp_ds_get_int(NETSNMP_DS_LIBRARY_ID,
           NETSNMP_DS_LIB_OID_OUTPUT_FORMAT);
 
-      if (py_netsnmp_attr_long(session, "UseLongNames")) {
-        getlabel_flag |= USE_LONG_NAMES;
-
+      if (getlabel_flag & USE_LONG_NAMES) {
         netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
             NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
             NETSNMP_OID_OUTPUT_FULL);
@@ -2386,13 +2403,15 @@ netsnmp_getbulk(PyObject *self, PyObject *args)
       /* Setting UseNumeric forces UseLongNames on so check for UseNumeric
          after UseLongNames (above) to make sure the final outcome of 
          NETSNMP_DS_LIB_OID_OUTPUT_FORMAT is NETSNMP_OID_OUTPUT_NUMERIC */
-      if (py_netsnmp_attr_long(session, "UseNumeric")) {
-        getlabel_flag |= USE_LONG_NAMES;
-        getlabel_flag |= USE_NUMERIC_OIDS;
-
+      if (getlabel_flag & USE_NUMERIC_OIDS) {
         netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
             NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
             NETSNMP_OID_OUTPUT_NUMERIC);
+      }
+      if (getlabel_flag & USE_MODULE) {
+        netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
+            NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
+            NETSNMP_OID_OUTPUT_MODULE);
       }
 
       /* create tuple in which to return results */
